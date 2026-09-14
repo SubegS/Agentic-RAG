@@ -62,7 +62,7 @@ broken `langchain.text_splitter` import path) instead of this one.
 
 ---
 
-## 3. `[ ]` `langchain_tavily` is used but never installed
+## 3. `[x]` `langchain_tavily` is used but never installed — RESOLVED
 
 **Where:** `graph/nodes/web_search.py` — `from langchain_tavily import
 TavilySearch`.
@@ -76,6 +76,15 @@ named 'langchain_tavily'`.
 `poetry lock && poetry install`. (Keep or drop the plain `tavily-python`
 dependency depending on whether anything else still needs it directly —
 right now nothing does.)
+
+**What was done:** Added `"langchain-tavily (>=0.2.0,<0.3.0)"` to
+`pyproject.toml` (kept `tavily-python` too — `langchain-tavily` pulls it in
+as its own transitive dependency anyway, and it's harmless either way), ran
+`poetry lock` (resolved `langchain-tavily 0.2.17`) then `poetry install`.
+Verified with `python -c "from langchain_tavily import TavilySearch"`,
+which now succeeds. Loading `web_search.py`'s module-level code now fails
+only on the expected next issue — `TAVILY_API_KEY` not set (bug #9) — not
+on a missing module.
 
 ---
 
