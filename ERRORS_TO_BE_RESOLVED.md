@@ -39,7 +39,7 @@ problem) by checking that `poetry run pytest`'s failure mode changed from
 
 ---
 
-## 2. `[ ]` `langchain_chroma` is used but never installed
+## 2. `[x]` `langchain_chroma` is used but never installed — RESOLVED
 
 **Where:** `ingestion.py` — `from langchain_chroma import Chroma`.
 
@@ -51,6 +51,14 @@ graph.
 
 **How to resolve:** Add `langchain-chroma` to `pyproject.toml`, then
 `poetry lock && poetry install`.
+
+**What was done:** Added `"langchain-chroma (>=1.0.0,<2.0.0)"` to
+`pyproject.toml`, ran `poetry lock` (resolved `langchain-chroma 1.1.0` —
+`chromadb` was already a dependency, so this only added the one thin
+integration package) then `poetry install`. Verified with
+`python -c "from langchain_chroma import Chroma"`, which now succeeds.
+`ingestion.py` still fails, but now on the next documented bug (#4, the
+broken `langchain.text_splitter` import path) instead of this one.
 
 ---
 
