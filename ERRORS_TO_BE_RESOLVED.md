@@ -88,7 +88,7 @@ on a missing module.
 
 ---
 
-## 4. `[ ]` `ingestion.py` imports a module path that no longer exists
+## 4. `[x]` `ingestion.py` imports a module path that no longer exists — RESOLVED
 
 **Where:** `ingestion.py`, line 2 —
 `from langchain.text_splitter import RecursiveCharacterTextSplitter`.
@@ -106,9 +106,20 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 (`langchain-text-splitters` is already pulled in transitively, but consider
 adding it to `pyproject.toml` explicitly since the code imports it directly.)
 
+**What was done:** Changed the import as above, and added
+`"langchain-text-splitters (>=1.0.0,<2.0.0)"` to `pyproject.toml` as a
+direct dependency (it was already present transitively via `langchain`, so
+`poetry install` needed nothing new — `poetry lock` just formalized it).
+Verified with `python -c "from langchain_text_splitters import
+RecursiveCharacterTextSplitter"`. `ingestion.py` now imports cleanly and
+gets all the way to its runtime logic — it only fails afterward on a
+sandbox network restriction (`WebBaseLoader` can't reach
+`lilianweng.github.io` from this environment), which is unrelated to this
+bug.
+
 ---
 
-## 5. `[ ]` `graph/chains/generation.py` imports `hub` from the wrong place
+## 5. `[x]` `graph/chains/generation.py` imports `hub` from the wrong place — RESOLVED
 
 **Where:** `graph/chains/generation.py`, line 1 — `from langchain import hub`.
 
@@ -127,6 +138,21 @@ prompt = langchainhub.Client().pull("rlm/rag-prompt")
 Or, simpler and more robust long-term, drop the `hub.pull()` call entirely
 and hardcode the "rlm/rag-prompt" prompt text as a local `ChatPromptTemplate`
 so the app doesn't depend on a network call to LangChain's hub just to boot.
+
+**What was done:** Kept the `hub.pull()` approach (network dependency
+accepted, per decision to keep prompt fidelity with the live hub rather than
+hardcode a possibly-stale copy). Changed the import to
+`from langchain_classic import hub` — `langchain-classic` (already pulled in
+transitively via `langchain-community`) ships a proper drop-in `hub.pull()`
+that returns a real prompt object, unlike calling the low-level
+`langchainhub.Client().pull()` directly (which returns a raw manifest
+needing manual deserialization). Added `"langchain-classic
+(>=1.0.0,<2.0.0)"` to `pyproject.toml` as a direct dependency since the code
+now imports it by name. Verified with `python -c "from langchain_classic
+import hub"`, and confirmed `graph/chains/generation.py` now imports past
+this line entirely — with a dummy `OPENAI_API_KEY` set, `hub.pull()`
+correctly attempts a real network call to `api.smith.langchain.com`, blocked
+only by this sandbox's network policy, not by any remaining code issue.
 
 ---
 
