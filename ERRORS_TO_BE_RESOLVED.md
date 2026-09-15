@@ -10,7 +10,7 @@ Status legend: `[ ]` not started, `[x]` resolved.
 
 ---
 
-## 1. `[ ]` `langchain_openai` is used but never installed
+## 1. `[x]` `langchain_openai` is used but never installed — RESOLVED
 
 **Where:** `graph/chains/retrieval_grader.py`, `graph/chains/generation.py`,
 `graph/chains/hallucination_grader.py`, `graph/chains/answer_grader.py`,
@@ -24,9 +24,22 @@ files raises `ModuleNotFoundError: No module named 'langchain_openai'`.
 `pyproject.toml` (a version compatible with `langchain 1.2.0`), then run
 `poetry lock` and `poetry install` to regenerate the lock file.
 
+**What was done:** Added `"langchain-openai (>=1.0.0,<2.0.0)"` to
+`pyproject.toml`, ran `poetry lock` (resolved `langchain-openai 1.1.6`,
+pulling in `openai`, `jiter`, `sniffio` as new transitive deps) then
+`poetry install`. Verified with:
+```bash
+poetry run python -c "from langchain_openai import ChatOpenAI"
+```
+which now succeeds. Confirmed the fix is complete (not masking a different
+problem) by checking that `poetry run pytest`'s failure mode changed from
+`ModuleNotFoundError: No module named 'langchain_openai'` to
+`openai.OpenAIError: Missing credentials` — i.e. the *next* bug in this list
+(#9, no API key set), not this one.
+
 ---
 
-## 2. `[ ]` `langchain_chroma` is used but never installed
+## 2. `[x]` `langchain_chroma` is used but never installed — RESOLVED
 
 **Where:** `ingestion.py` — `from langchain_chroma import Chroma`.
 
@@ -39,9 +52,17 @@ graph.
 **How to resolve:** Add `langchain-chroma` to `pyproject.toml`, then
 `poetry lock && poetry install`.
 
+**What was done:** Added `"langchain-chroma (>=1.0.0,<2.0.0)"` to
+`pyproject.toml`, ran `poetry lock` (resolved `langchain-chroma 1.1.0` —
+`chromadb` was already a dependency, so this only added the one thin
+integration package) then `poetry install`. Verified with
+`python -c "from langchain_chroma import Chroma"`, which now succeeds.
+`ingestion.py` still fails, but now on the next documented bug (#4, the
+broken `langchain.text_splitter` import path) instead of this one.
+
 ---
 
-## 3. `[ ]` `langchain_tavily` is used but never installed
+## 3. `[x]` `langchain_tavily` is used but never installed — RESOLVED
 
 **Where:** `graph/nodes/web_search.py` — `from langchain_tavily import
 TavilySearch`.
@@ -55,6 +76,15 @@ named 'langchain_tavily'`.
 `poetry lock && poetry install`. (Keep or drop the plain `tavily-python`
 dependency depending on whether anything else still needs it directly —
 right now nothing does.)
+
+**What was done:** Added `"langchain-tavily (>=0.2.0,<0.3.0)"` to
+`pyproject.toml` (kept `tavily-python` too — `langchain-tavily` pulls it in
+as its own transitive dependency anyway, and it's harmless either way), ran
+`poetry lock` (resolved `langchain-tavily 0.2.17`) then `poetry install`.
+Verified with `python -c "from langchain_tavily import TavilySearch"`,
+which now succeeds. Loading `web_search.py`'s module-level code now fails
+only on the expected next issue — `TAVILY_API_KEY` not set (bug #9) — not
+on a missing module.
 
 ---
 
