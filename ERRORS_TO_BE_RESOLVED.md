@@ -156,7 +156,7 @@ only by this sandbox's network policy, not by any remaining code issue.
 
 ---
 
-## 6. `[ ]` The vector store is never actually populated
+## 6. `[x]` The vector store is never actually populated — RESOLVED
 
 **Where:** `ingestion.py`, lines 23-28.
 
@@ -184,6 +184,18 @@ store. The whole RAG pipeline effectively has no knowledge base.
   ingestion.py` script the README tells users to run once) that builds the
   store only if `./.chroma` doesn't already exist, then have `retriever`
   just open the existing store.
+
+**What was done:** Took the guarded, build-once approach. The
+fetch/split/embed block now only runs `if not
+os.path.exists(CHROMA_PERSIST_DIR)`; the final `retriever = Chroma(...)`
+line (unchanged) always just opens whatever's at `./.chroma`, whether this
+run just built it or a previous run already did. Also added `.chroma/` to
+`.gitignore` — it's a generated data artifact (a SQLite DB of embeddings),
+not source, and shouldn't ever be committed. Verified both branches
+directly: with `.chroma/` absent, the build branch correctly triggers (and
+attempts the real network fetch, blocked only by this sandbox's network
+policy — same as bug #4); with `.chroma/` present, the import skips the
+build entirely and no network call is attempted at all.
 
 ---
 
