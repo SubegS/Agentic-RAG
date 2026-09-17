@@ -116,3 +116,6 @@ venv.bak/
 
 # Windows
 Thumbs.db
+
+# Chroma vector store (built locally by ingestion.py)
+.chroma/
